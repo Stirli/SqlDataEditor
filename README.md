@@ -1,1 +1,1 @@
-SqlDataEditor
+Simple MS SQL data editor

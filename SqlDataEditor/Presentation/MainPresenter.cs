@@ -18,7 +18,7 @@ namespace SqlDataEditor.Presentation
 		private ILoginForm _loginForm;
 
 		private SqlConnection _connection;
-		Dictionary<DataTable, SqlDataAdapter> _adapeterDic;
+		Dictionary<string, (DataTable Table, SqlDataAdapter Adapter)> _adapeterDic;
 
 		public void Start()
 		{
@@ -31,7 +31,7 @@ namespace SqlDataEditor.Presentation
 
 			_main = new MainForm();
 			_main.TableDataRequest += Main_TableDataRequest;
-			_main.TableUpdateRequest += Main_TableUpdateRequest;
+			_main.UpdateTablesRequest += Main_TableUpdateRequest;
 			_main.TableClosed += Main_TableClosed;
 
 
@@ -56,21 +56,22 @@ namespace SqlDataEditor.Presentation
 			}
 		}
 
-		private void Main_TableClosed(object? sender, DataTable e)
+		private void Main_TableClosed(object? sender, string tableName)
 		{
-			_adapeterDic[e].Dispose();
-			e.Dispose();
-			_adapeterDic.Remove(e);
+			(DataTable Table, SqlDataAdapter Adapter) = _adapeterDic[tableName];
+			Table.Dispose();
+			Adapter.Dispose();
+			_adapeterDic.Remove(tableName);
 		}
 
-		private void Main_TableUpdateRequest(object? sender, DataTable[] e)
+		private void Main_TableUpdateRequest(object? sender, string[] e)
 		{
 			foreach (var item in e)
 			{
-				SqlDataAdapter adapter = _adapeterDic[item];
+				(DataTable Table, SqlDataAdapter Adapter) = _adapeterDic[item];
 				
-				SqlCommandBuilder cb = new (adapter);
-				adapter.Update(item);
+				SqlCommandBuilder cb = new (Adapter);
+				Adapter.Update(Table);
 			}
 		}
 
@@ -82,7 +83,7 @@ namespace SqlDataEditor.Presentation
 				DataTable table = new(s);
 				adapter.Fill(table);
 				_main.AddTable(table);
-				_adapeterDic.Add(table, adapter);
+				_adapeterDic.Add(s, (table, adapter));
 			}
 		}
 
@@ -97,8 +98,8 @@ namespace SqlDataEditor.Presentation
 		{
 			foreach (var item in _adapeterDic)
 			{
-				item.Key.Dispose();
-				item.Value.Dispose();
+				item.Value.Table.Dispose();
+				item.Value.Adapter.Dispose();
 			}
 
 			_connection.Dispose();

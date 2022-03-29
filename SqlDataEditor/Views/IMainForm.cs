@@ -15,8 +15,8 @@ namespace SqlDataEditor.Views
 		void AddTable(DataTable table);
 
 		public event EventHandler<string[]> TableDataRequest;
-		public event EventHandler<DataTable[]> TableUpdateRequest;
-		public event EventHandler<DataTable> TableClosed;
+		public event EventHandler<string[]> UpdateTablesRequest;
+		public event EventHandler<string> TableClosed;
 
 	}
 }

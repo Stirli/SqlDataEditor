@@ -1,4 +1,6 @@
+using SqlDataEditor.Common;
 using SqlDataEditor.Extensions;
+using SqlDataEditor.ThisControls;
 using SqlDataEditor.Views;
 using System.Data;
 
@@ -10,6 +12,16 @@ namespace SqlDataEditor
 		{
 			InitializeComponent();
 			tabControl1.TabPages.Clear();
+			tabControl1.TabPages.CollectionChanged += (s, e) =>
+			{
+				if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Remove)
+				{
+					foreach (DataPage item in e.OldItems)
+					{
+						TableClosed?.Invoke(this, item.Name);
+					}
+				}
+			};
 		}
 
 		public event EventHandler<string[]>? TableDataRequest;
@@ -18,17 +30,14 @@ namespace SqlDataEditor
 
 		public void AddTable(DataTable table)
 		{
-			TabPage page = new(table.TableName);
-			page.Name = table.TableName;
-			page.ContextMenuStrip = tabContextMenuStrip;
-			page.Controls.Add(new DataGridView()
+			DataPage page = new()
 			{
-				DataSource = table,
-				Dock = DockStyle.Fill,
-				AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
-			});
-
+				Text = table.TableName,
+				Name = table.TableName
+			};
+			page.DataSource = table;
 			tabControl1.TabPages.Add(page);
+			tabControl1.SelectedTab = page;
 		}
 
 		public void SetTablesList(string[] list)
@@ -41,7 +50,7 @@ namespace SqlDataEditor
 		private void updateToolStripMenuItem_Click(object sender, EventArgs e)
 		{
 			DataTable[] arr = tabControl1.TabPages.SelectMany<DataGridView, DataTable>(c => ((DataTable)c.DataSource)).ToArray();
-			UpdateTablesRequest?.Invoke(this, tabControl1.TabPages.Select(p=>p.Name).ToArray());
+			UpdateTablesRequest?.Invoke(this, tabControl1.TabPages.Select(p => p.Name).ToArray());
 		}
 
 		private void updateTabToolStripMenuItem_Click(object sender, EventArgs e)
@@ -55,10 +64,9 @@ namespace SqlDataEditor
 			TableDataRequest?.Invoke(this, arr);
 		}
 
-		private void closeToolStripMenuItem_Click(object sender, EventArgs e)
+		private void tabControl1_ControlAdded(object sender, ControlEventArgs e)
 		{
-			TableClosed?.Invoke(this, tabControl1.SelectedTab.Name);
-			tabControl1.TabPages.Remove(tabControl1.SelectedTab);
+			e.Control.ContextMenuStrip = tabContextMenuStrip;
 		}
 	}
 }
